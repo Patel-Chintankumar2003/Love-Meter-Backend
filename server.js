@@ -1,15 +1,19 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // MongoDB Connection
-require('dotenv').config();
 mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+    ssl: true, // Ensure SSL/TLS is used for the connection
+    tlsAllowInvalidCertificates: true, // This can be removed in production if you're using valid certificates
+}).then(() => {
+    console.log('Connected to MongoDB');
+}).catch((err) => {
+    console.error('Error connecting to MongoDB:', err.message);
 });
 
 const loveSchema = new mongoose.Schema({
@@ -38,6 +42,3 @@ app.post('/submit', (req, res) => {
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
-
-
-
