@@ -1,44 +1,61 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-    ssl: true, // Ensure SSL/TLS is used for the connection
-    tlsAllowInvalidCertificates: true, // This can be removed in production if you're using valid certificates
-}).then(() => {
-    console.log('Connected to MongoDB');
-}).catch((err) => {
+// MongoDB Connection URI from the .env file
+const uri = process.env.MONGODB_URI;
+
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  }
+});
+
+async function run() {
+  try {
+    // Connect the client to the server (optional starting in v4.7)
+    await client.connect();
+    console.log("Connected to MongoDB!");
+
+    const database = client.db('loveMeter'); // Use your database name here
+    const loveCollection = database.collection('loves'); // Use your collection name here
+
+    // Middleware
+    app.use(bodyParser.json());
+    app.use(express.static('public'));
+
+    // Handle POST request
+    app.post('/submit', async (req, res) => {
+      const { yourName, partnerName, result } = req.body;
+
+      const newEntry = {
+        yourName,
+        partnerName,
+        result
+      };
+
+      try {
+        await loveCollection.insertOne(newEntry);
+        res.json({ message: 'Data saved successfully' });
+      } catch (err) {
+        res.status(500).json({ error: 'Failed to save data' });
+      }
+    });
+
+    // Start the server
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  } catch (err) {
     console.error('Error connecting to MongoDB:', err.message);
-});
+  }
+}
 
-const loveSchema = new mongoose.Schema({
-    yourName: String,
-    partnerName: String,
-    result: Number,
-});
-
-const Love = mongoose.model('Love', loveSchema);
-
-app.use(bodyParser.json());
-app.use(express.static('public'));
-
-// Handle POST request
-app.post('/submit', (req, res) => {
-    const { yourName, partnerName, result } = req.body;
-
-    const newEntry = new Love({ yourName, partnerName, result });
-
-    newEntry.save()
-        .then(() => res.json({ message: 'Data saved successfully' }))
-        .catch(err => res.status(500).json({ error: 'Failed to save data' }));
-});
-
-// Start server
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
-});
+run().catch(console.dir);
