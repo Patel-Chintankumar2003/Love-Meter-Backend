@@ -1,6 +1,9 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+import express from "express"
+import bodyParser from "body-parser";
+// const bodyParser = require('body-parser');
+import { MongoClient, ServerApiVersion } from "mongodb";
+// const { MongoClient, ServerApiVersion } = require('mongodb');
+
 require('dotenv').config();
 
 const app = express();
